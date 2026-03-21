@@ -818,7 +818,7 @@ def _format_output(top, opportunities, portfolio):
     )
     border()
 
-    return "\n".join(lines)
+    return "\n".join(line.center(210) for line in lines)
 
 
 def simulate_portfolio(results, capital=100_000):

@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
+from fastapi.middleware.cors import CORSMiddleware
 from backend.services.orchestrator import (
     run_pipeline,
     scan_market,
@@ -9,6 +10,13 @@ from backend.services.orchestrator import (
 )
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/analyze/{symbol}")
