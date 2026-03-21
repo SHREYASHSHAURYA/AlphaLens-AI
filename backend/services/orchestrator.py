@@ -139,11 +139,11 @@ def scan_market(symbols):
 
     portfolio = simulate_portfolio(results)
 
-    formatted = _format_output(top, results[:5], portfolio)
+    formatted = _format_output(top, results[:15], portfolio)
 
     return {
         "top_pick": top,
-        "all_opportunities": results[:5],
+        "all_opportunities": results[:15],
         "portfolio": portfolio,
     }
 

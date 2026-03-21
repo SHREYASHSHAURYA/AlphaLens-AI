@@ -105,15 +105,27 @@ export default function Opportunity() {
 
   return (
     <div className="max-w-7xl mx-auto pt-8 pb-8 px-4 space-y-6">
-      {/* Back */}
-      <div className="sticky top-16 z-40 bg-[#0F172A] pb-2 pt-1">
-        {/* Back */}
+      {/* Back + Symbol Selector */}
+      <div className="sticky top-16 z-40 bg-[#0F172A]/95 backdrop-blur-sm pb-2 pt-1 flex items-center justify-between">
         <button
           onClick={() => navigate("/")}
           className="text-slate-400 hover:text-accent text-sm flex items-center gap-2 transition-colors"
         >
           ← Back to Dashboard
         </button>
+        <select
+          value={decoded}
+          onChange={(e) =>
+            navigate(`/opportunity/${encodeURIComponent(e.target.value)}`)
+          }
+          className="bg-[#1E293B] border border-slate-600 text-slate-300 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-accent"
+        >
+          {data.all_opportunities?.map((o) => (
+            <option key={o.symbol} value={o.symbol}>
+              {o.symbol.replace(".NS", "")} — {o.data.decision.action}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Header */}

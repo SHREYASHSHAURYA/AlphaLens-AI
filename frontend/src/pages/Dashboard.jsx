@@ -136,11 +136,7 @@ export default function Dashboard() {
           value={`+${pvb.outperformance_pct ?? 0}%`}
           color="text-green-400"
         />
-        <MetricCard
-          label="Assets Scanned"
-          value={opportunities?.length || 0}
-          sub="NSE symbols"
-        />
+        <MetricCard label="Assets Scanned" value={15} sub="NSE symbols" />
         <MetricCard
           label="Trades Tested"
           value={totalTrades}

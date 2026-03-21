@@ -34,6 +34,15 @@ def scan():
         "HDFCBANK.NS",
         "ICICIBANK.NS",
         "SBIN.NS",
+        "WIPRO.NS",
+        "BAJFINANCE.NS",
+        "ADANIENT.NS",
+        "TITAN.NS",
+        "HINDUNILVR.NS",
+        "KOTAKBANK.NS",
+        "AXISBANK.NS",
+        "MARUTI.NS",
+        "SUNPHARMA.NS",
     ]
     return scan_market(symbols)
 
@@ -47,6 +56,15 @@ def report():
         "HDFCBANK.NS",
         "ICICIBANK.NS",
         "SBIN.NS",
+        "WIPRO.NS",
+        "BAJFINANCE.NS",
+        "ADANIENT.NS",
+        "TITAN.NS",
+        "HINDUNILVR.NS",
+        "KOTAKBANK.NS",
+        "AXISBANK.NS",
+        "MARUTI.NS",
+        "SUNPHARMA.NS",
     ]
 
     data = scan_market(symbols)
