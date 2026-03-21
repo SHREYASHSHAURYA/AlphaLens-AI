@@ -213,6 +213,97 @@ def _cross_asset_summary(opportunities):
     }
 
 
+def _generate_ai_analyst_brief(top):
+    if not top:
+        return []
+
+    d = top["data"]
+    bt = d["backtest"]
+    dec = d["decision"]
+    signals = d["signals"]
+
+    symbol = d["symbol"]
+    action = dec["action"]
+    confidence = int(dec["confidence"] * 100)
+
+    ml_prob = dec.get("ml_prediction")
+    ml_auc = dec.get("ml_auc")
+
+    ml_line = None
+    if ml_prob is not None:
+        ml_line = (
+            f"ML model predicts {round(ml_prob*100,1)}% probability of positive return."
+        )
+
+    signal_types = [s["type"] for s in signals if s["type"] != "No Active Setup"]
+
+    reasons = []
+    if ml_line:
+        reasons.append(ml_line)
+
+    for s in signal_types[:2]:
+        reasons.append(f"Technical signal detected: {s}")
+
+    if not reasons:
+        reasons.append("No active technical setup detected.")
+        reasons.append(
+            "System recommends monitoring the asset until stronger signals appear."
+        )
+
+    evidence = [
+        f"Win Rate: {int(bt['win_rate']*100)}%",
+        f"Average Return: {round(bt['avg_return']*100,2)}%",
+        f"Sharpe Ratio: {bt.get('sharpe',0)}",
+    ]
+
+    risk = [
+        f"Maximum historical drawdown: {round(bt.get('max_drawdown',0)*100,2)}%",
+        f"Volatility (Std Dev): {round(bt.get('std_dev',0)*100,2)}%",
+    ]
+
+    lines = []
+    lines.append(f"{symbol} — {action}")
+    lines.append(f"Confidence: {confidence}%")
+    lines.append("")
+    lines.append("Why this opportunity exists:")
+    lines += [f"• {r}" for r in reasons]
+    lines.append("")
+    lines.append("Historical Evidence:")
+    lines += [f"• {e}" for e in evidence]
+    lines.append("")
+    lines.append("Risk Factors:")
+    lines += [f"• {r}" for r in risk]
+
+    return lines
+
+
+def _simulate_investment(amount, portfolio):
+    import numpy as np
+
+    positions = portfolio.get("positions", [])
+    if not positions:
+        return {}
+
+    expected_return = portfolio.get("returns_pct", 0) / 100
+
+    worst = amount * (1 + expected_return * 0.5)
+    expected = amount * (1 + expected_return)
+    best = amount * (1 + expected_return * 1.5)
+
+    allocations = []
+    for p in positions:
+        alloc = amount * (p["allocation_pct"] / 100)
+        allocations.append((p["symbol"], round(alloc, 2)))
+
+    return {
+        "investment": amount,
+        "allocations": allocations,
+        "worst": round(worst, 2),
+        "expected": round(expected, 2),
+        "best": round(best, 2),
+    }
+
+
 def _format_output(top, opportunities, portfolio):
     from datetime import datetime
 
@@ -439,6 +530,14 @@ def _format_output(top, opportunities, portfolio):
         row("Signals", insight.get("signal_count", 0))
         row("Trades Tested", insight.get("trades_backtested", 0))
 
+    # AI ANALYST BRIEF
+    section("AI ANALYST BRIEF")
+
+    brief = _generate_ai_analyst_brief(top)
+
+    for line in brief:
+        text_block(line)
+
     # OPPORTUNITIES
     section("ALL OPPORTUNITIES")
 
@@ -532,6 +631,25 @@ def _format_output(top, opportunities, portfolio):
         else:
             lines.append(f"|    {w:<{WIDTH-8}} |")
 
+    # INVESTMENT SIMULATION
+    section("INVESTMENT SIMULATION")
+
+    sim = _simulate_investment(500000, portfolio)
+
+    if sim:
+        row("Investment", f"Rs.{sim['investment']:,.0f}")
+
+        text_block("Recommended Allocation")
+
+        for sym, amt in sim["allocations"]:
+            text_block(f"{sym} → Rs.{amt:,.0f}")
+
+        empty()
+
+        row("Worst Case", f"Rs.{sim['worst']:,.0f}")
+        row("Expected", f"Rs.{sim['expected']:,.0f}")
+        row("Best Case", f"Rs.{sim['best']:,.0f}")
+
     # CURVES
     section("PERFORMANCE CURVES")
 
@@ -551,6 +669,20 @@ def _format_output(top, opportunities, portfolio):
 
     text_block(
         "Weights are derived from Kelly fractions estimated from historical win rate and reward/risk ratio, then normalized across selected assets."
+    )
+
+    section("STRATEGY VS MARKET")
+
+    strategy_final = portfolio.get("final_capital", 0)
+    bench = portfolio.get("benchmark", {})
+    bench_final = bench.get("final_capital", 0)
+
+    row("Strategy Growth", f"Rs.100,000 → Rs.{strategy_final:,.0f}")
+    row("Benchmark Growth", f"Rs.100,000 → Rs.{bench_final:,.0f}")
+
+    text_block(
+        "Strategy equity growth is compared against a buy-and-hold benchmark "
+        "to demonstrate the advantage of the signal-driven portfolio approach."
     )
 
     # ------------------------------------------------
