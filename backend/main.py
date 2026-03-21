@@ -41,10 +41,12 @@ def report():
         "SBIN.NS",
     ]
 
-    result = scan_market(symbols)
+    data = scan_market(symbols)
 
-    return _format_output(
-        result["top_pick"],
-        result["all_opportunities"],
-        result["portfolio"],
+    formatted = _format_output(
+        data["top_pick"],
+        data["all_opportunities"],
+        data["portfolio"],
     )
+
+    return formatted

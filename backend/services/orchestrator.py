@@ -4,6 +4,7 @@ from backend.agents.signal_agent import detect_signals
 from backend.agents.backtest_agent import backtest_breakout
 from backend.agents.reasoning_agent import generate_reasoning
 from backend.agents.action_agent import generate_action
+from backend.agents.reasoning_agent import generate_ml_explanation
 
 
 def run_pipeline(symbol):
@@ -27,12 +28,14 @@ def run_pipeline(symbol):
     backtest = backtest_breakout(df)
     reasoning = generate_reasoning(signals)
     action = generate_action(signals, backtest)
+    ml_explanation = generate_ml_explanation(action, backtest)
 
     return {
         "symbol": symbol,
         "signals": signals,
         "why": why_summary,
         "reasoning": reasoning,
+        "ml_explanation": ml_explanation,
         "backtest": backtest,
         "decision": action,
     }
@@ -146,139 +149,230 @@ def scan_market(symbols):
 
 
 def _format_output(top, opportunities, portfolio):
+    WIDTH = 74
+    LABEL_W = 16
+    SEP = ": "
+    CONTENT_W = WIDTH - 4 - LABEL_W - len(SEP)
+
     lines = []
 
-    def _clean_truncate(text, limit=60):
-        if len(text) <= limit:
-            return text
-        cut = text[:limit]
-        if " " in cut:
-            cut = cut.rsplit(" ", 1)[0]
-        return cut + "..."
+    def border():
+        lines.append("=" * WIDTH)
 
-    lines.append("=" * 60)
-    lines.append("           ALPHALENS AI  --  MARKET SCAN REPORT")
-    lines.append("=" * 60)
+    def section(title):
+        lines.append("")
+        lines.append("+" + "-" * (WIDTH - 2) + "+")
+        lines.append(f"| {title:<{WIDTH-4}} |")
+        lines.append("|" + "-" * (WIDTH - 2) + "|")
 
+    def empty():
+        lines.append(f"| {'':<{WIDTH-4}} |")
+
+    def wrap(text, width):
+        words = str(text).split()
+        out, line = [], ""
+        for w in words:
+            if len(line) + len(w) + 1 > width:
+                out.append(line)
+                line = w
+            else:
+                line = f"{line} {w}".strip()
+        if line:
+            out.append(line)
+        return out or [""]
+
+    def row(label, value):
+        wrapped = wrap(value, CONTENT_W)
+        label_str = f"{label:<{LABEL_W}}{SEP}"
+        lines.append(f"| {label_str}{wrapped[0]:<{CONTENT_W}} |")
+        for w in wrapped[1:]:
+            lines.append(f"| {' '*(LABEL_W+len(SEP))}{w:<{CONTENT_W}} |")
+
+    def text_block(text):
+        for w in wrap(text, WIDTH - 4):
+            lines.append(f"| {w:<{WIDTH-4}} |")
+
+    def perf_box(text):
+        if not text:
+            return
+        lines.append(f"| {'-'*(WIDTH-4)} |")
+        wrapped = wrap(text, WIDTH - 6)
+        for w in wrapped:
+            lines.append(f"|  {w:<{WIDTH-6}} |")
+        lines.append(f"| {'-'*(WIDTH-4)} |")
+
+    def curve_block(title, data):
+        if not data:
+            return
+        lines.append(f"| {title:<{WIDTH-4}} |")
+        lines.append(f"| {'-'*(WIDTH-4)} |")
+
+        COL = 10
+        PER = 5
+
+        for i in range(0, len(data), PER):
+            chunk = data[i : i + PER]
+            row_txt = " ".join(f"{float(x):>{COL}.2f}" for x in chunk)
+            lines.append(f"|  {row_txt:<{WIDTH-6}} |")
+
+        lines.append(f"| {'-'*(WIDTH-4)} |")
+
+    # HEADER
+    border()
+    lines.append(f"{'ALPHALENS AI  --  MARKET SCAN REPORT':^{WIDTH}}")
+    border()
+
+    # TOP PICK
     if top:
         d = top["data"]
         bt = d["backtest"]
-        decision = d["decision"]
-        signals = d["signals"]
-        signal_types = ", ".join(s["type"] for s in signals)
+        dec = d["decision"]
+        insight = top.get("insight", {})
         ml = bt.get("ml_model", {})
-        lines.append("")
-        lines.append("  TOP PICK")
-        lines.append("  " + "-" * 56)
-        lines.append(f"  Symbol        : {d['symbol']}")
-        lines.append(f"  Action        : {decision['action']}")
-        lines.append(f"  Confidence    : {int(decision['confidence'] * 100)}%")
-        lines.append(f"  Risk          : {decision['risk']}")
-        lines.append(f"  Signal        : {signal_types}")
-        lines.append(f"  Reasoning     : {d['reasoning']}")
-        if d.get("why"):
-            why_text = (
-                " | ".join(d["why"][:2])
-                if isinstance(d["why"], list)
-                else str(d["why"])
-            )
-            lines.append(f"  Why           : {why_text}")
-        lines.append("")
-        lines.append("  Backtest Performance:")
-        lines.append(f"    Win Rate        : {int(bt['win_rate'] * 100)}%")
-        lines.append(f"    Avg Return      : {round(bt['avg_return'] * 100, 2)}%")
-        lines.append(f"    Trades          : {bt['trades']}")
-        lines.append(f"    Sharpe Ratio    : {bt['sharpe']}")
-        lines.append(f"    Max Drawdown    : {round(bt['max_drawdown'] * 100, 2)}%")
-        lines.append(f"    Std Deviation   : {round(bt['std_dev'] * 100, 2)}%")
-        if decision.get("ml_prediction") is not None:
-            lines.append(
-                f"    ML Prediction   : {round(decision['ml_prediction'] * 100, 1)}% win probability"
-            )
-            lines.append(
-                f"    ML AUC          : {decision.get('ml_auc', 'N/A')}  (model reliability)"
-            )
-        if ml:
-            top_f = ml.get("top_features", [])
-            if top_f:
-                feat_str = ", ".join(f[0] for f in top_f)
-                lines.append(f"    Top ML Features : {feat_str}")
-            lines.append(
-                f"    Train / Test    : {ml.get('train_size','?')} / {ml.get('test_size','?')} samples"
-            )
 
-    lines.append("")
-    lines.append("  ALL OPPORTUNITIES")
-    lines.append("  " + "-" * 56)
-    lines.append(
-        f"{'Symbol':<16} {'Action':<7} {'Conf':>5}  {'WR':>5}  {'Ret':>6}  {'ML Prob':>8}  {'Sharpe':>7}  {'Why':<60}"
-    )
-    lines.append("  " + "-" * 56)
+        section("TOP PICK")
+
+        row("Symbol", d["symbol"])
+        row("Action", dec["action"])
+        row("Confidence", f"{int(dec['confidence']*100)}%")
+        row("Risk", dec["risk"])
+        row("Signal", ", ".join(s["type"] for s in d["signals"]))
+        row("Reasoning", d["reasoning"])
+        row("Why", " | ".join(d["why"][:2]))
+
+        empty()
+
+        row("Win Rate", f"{int(bt['win_rate']*100)}%")
+        row("Avg Return", f"{round(bt['avg_return']*100,2)}%")
+        row("Trades", bt["trades"])
+        row("Sharpe", bt["sharpe"])
+        row("Max Drawdown", f"{round(bt['max_drawdown']*100,2)}%")
+        row("Std Dev", f"{round(bt['std_dev']*100,2)}%")
+
+        if ml:
+            feats = ", ".join(f[0] for f in ml.get("top_features", []))
+            row("Top Features", feats)
+            row("Train/Test", f"{ml.get('train_size')} / {ml.get('test_size')}")
+
+        row("Signal Strength", f"{insight.get('signal_strength_pct',0)}%")
+        row("Signals", insight.get("signal_count", 0))
+        row("Trades Tested", insight.get("trades_backtested", 0))
+
+    # OPPORTUNITIES
+    section("ALL OPPORTUNITIES")
+
+    header = f"{'Symbol':<12} {'Act':<5} {'Conf':>5} {'WR':>5} {'Ret':>6} {'ML%':>6} {'Shp':>5} {'AUC':>6} {'Str':>5}"
+    lines.append(f"| {header:<{WIDTH-4}} |")
+    lines.append("|" + "-" * (WIDTH - 2) + "|")
+
     for r in opportunities:
         d = r["data"]
         dec = d["decision"]
         bt = d["backtest"]
-        why_short = ""
-        if d.get("why"):
-            why_short = d["why"][0] if isinstance(d["why"], list) else str(d["why"])
-            why_short = _clean_truncate(why_short, 60)
 
-        if not why_short:
-            why_short = "-"
-        ml_str = (
-            f"{round(dec['ml_prediction'] * 100, 1)}%"
-            if dec.get("ml_prediction") is not None
+        mlp = (
+            f"{round(dec['ml_prediction']*100,1)}%"
+            if dec.get("ml_prediction")
             else "N/A"
         )
-        lines.append(
-            f"  {d['symbol']:<16} {dec['action']:<7} "
-            f"{int(dec['confidence'] * 100):>4}%  "
-            f"{int(bt['win_rate'] * 100):>4}%  "
-            f"{round(bt['avg_return'] * 100, 1):>5}%  "
-            f"{ml_str:>8}  "
-            f"{bt['sharpe']:>7}  {why_short:<60}"
+        auc = str(dec.get("ml_auc", "N/A"))
+
+        signal_strength = (
+            int(sum(s["strength"] for s in d["signals"]) / len(d["signals"]) * 100)
+            if d.get("signals")
+            else 0
         )
 
-    lines.append("")
-    lines.append("  PORTFOLIO POSITIONS")
-    lines.append("  " + "-" * 56)
-    if portfolio.get("positions"):
-        lines.append(
-            f"  {'Symbol':<16} {'Alloc':>7}  {'Exp Return':>11}  {'Profit':>12}"
+        row_txt = (
+            f"{d['symbol']:<12} {dec['action']:<5} "
+            f"{int(dec['confidence']*100):>4}% "
+            f"{int(bt['win_rate']*100):>4}% "
+            f"{round(bt['avg_return']*100,1):>5}% "
+            f"{mlp:>6} {bt['sharpe']:>5} {auc:>6} {signal_strength:>4}%"
         )
-        lines.append("  " + "-" * 56)
-        for p in portfolio["positions"]:
-            lines.append(
-                f"  {p['symbol']:<16} {p['allocation_pct']:>6}%  "
-                f"{'+' + str(p['expected_return_pct']) + '%':>11}  "
-                f"{'Rs.' + '{:,.2f}'.format(p['profit']):>12}"
-            )
-        lines.append("")
-        lines.append("  PORTFOLIO SUMMARY")
-        lines.append("  " + "-" * 56)
-        pvb = portfolio.get("performance_vs_benchmark", {})
-        lines.append(f"  Initial Capital   : Rs.{portfolio['initial_capital']:,.0f}")
-        lines.append(f"  Final Capital     : Rs.{portfolio['final_capital']:,.2f}")
-        lines.append(f"  Strategy Return   : {pvb.get('strategy_return_pct', 0)}%")
-        lines.append(
-            f"  Benchmark Return  : {pvb.get('benchmark_return_pct', 0)}%  (Buy & Hold equal weight)"
-        )
-        lines.append(f"  Outperformance    : +{pvb.get('outperformance_pct', 0)}%")
-        lines.append(
-            f"  Max Drawdown      : {pvb.get('strategy_max_drawdown_pct', 0)}%"
-        )
-        lines.append(f"  Compounded Growth : {portfolio.get('compounded_growth', 1)}x")
-    else:
-        lines.append("  No active BUY positions.")
-        lines.append(
-            "  Market conditions do not meet entry criteria -- capital preserved."
+        lines.append(f"| {row_txt:<{WIDTH-4}} |")
+
+        if d.get("ml_explanation"):
+            txt = f"→ ML {d['ml_explanation']['probability']}%: {', '.join(d['ml_explanation']['drivers'][:2])}"
+        else:
+            txt = f"→ {d['why'][0]}"
+
+        for w in wrap(txt, WIDTH - 6):
+            lines.append(f"|   {w:<{WIDTH-6}} |")
+
+    # PORTFOLIO
+    section("PORTFOLIO POSITIONS")
+
+    for p in portfolio.get("positions", []):
+        text_block(
+            f"{p['symbol']} | {p['allocation_pct']}% | +{p['expected_return_pct']}% | Rs.{p['profit']:.2f}"
         )
 
-    lines.append("")
-    lines.append("=" * 60)
-    lines.append("  System: An AI-driven trading system combining regime awareness,")
-    lines.append("  risk-adjusted scoring, and ML to adapt to market conditions.")
-    lines.append("=" * 60)
+        text_block(
+            f"  Kelly Fraction: {p.get('kelly_fraction',0)} | Weight: {p['allocation_pct']}%"
+        )
+
+    section("PORTFOLIO SUMMARY")
+
+    pvb = portfolio.get("performance_vs_benchmark", {})
+    bench = portfolio.get("benchmark", {})
+
+    row("Strategy Return", f"{pvb.get('strategy_return_pct')}%")
+    row("Benchmark Return", f"{pvb.get('benchmark_return_pct')}%")
+    row("Outperformance", f"+{pvb.get('outperformance_pct')}%")
+    row("Strategy Max DD", f"{pvb.get('strategy_max_drawdown_pct')}%")
+    row("Benchmark Max DD", f"{pvb.get('benchmark_max_drawdown_pct')}%")
+
+    row("Initial", f"Rs.{portfolio['initial_capital']:,.0f}")
+    row("Final", f"Rs.{portfolio['final_capital']:,.2f}")
+    row("Growth", f"{portfolio.get('compounded_growth')}x")
+
+    empty()
+
+    perf_box(portfolio.get("performance_summary", ""))
+
+    empty()
+
+    # clean comparison line
+    line = (
+        f"Strategy vs Benchmark → Return: {pvb.get('strategy_return_pct')}% vs {pvb.get('benchmark_return_pct')}%, "
+        f"Drawdown: {pvb.get('strategy_max_drawdown_pct')}% vs {pvb.get('benchmark_max_drawdown_pct')}%"
+    )
+
+    wrapped = wrap(line, WIDTH - 6)
+    for i, w in enumerate(wrapped):
+        if i == 0:
+            lines.append(f"|  {w:<{WIDTH-6}} |")
+        else:
+            lines.append(f"|    {w:<{WIDTH-8}} |")
+
+    # CURVES
+    section("PERFORMANCE CURVES")
+
+    curve_block("EQUITY CURVE (Strategy)", portfolio.get("equity_curve"))
+    curve_block("DRAWDOWN CURVE (Strategy)", portfolio.get("drawdown_curve"))
+
+    empty()
+
+    curve_block("EQUITY CURVE (Benchmark)", bench.get("equity_curve"))
+    curve_block("DRAWDOWN CURVE (Benchmark)", bench.get("drawdown_curve"))
+
+    empty()
+
+    text_block(
+        "Position sizing uses Kelly-adjusted weighting based on expected return, win probability, and drawdown risk."
+    )
+
+    text_block(
+        "Weights are derived from Kelly fractions estimated from historical win rate and reward/risk ratio, then normalized across selected assets."
+    )
+
+    # FOOTER
+    border()
+    lines.append(
+        f"{'System: AI-driven trading system with ML + risk scoring.':^{WIDTH}}"
+    )
+    border()
 
     return "\n".join(lines)
 
@@ -311,7 +405,7 @@ def simulate_portfolio(results, capital=100_000):
             },
             "positions": [],
         }
-
+    kelly_details = []
     raw_weights = []
     for trade in tradeable:
         bt = trade["data"]["backtest"]
@@ -334,6 +428,10 @@ def simulate_portfolio(results, capital=100_000):
 
         raw_weights.append(raw_weight)
 
+        kelly_details.append(
+            {"symbol": trade["symbol"], "kelly_fraction": round(raw_weight, 3)}
+        )
+
     total = sum(raw_weights)
     if total == 0:
         weights = [1 / len(tradeable)] * len(tradeable)
@@ -346,11 +444,21 @@ def simulate_portfolio(results, capital=100_000):
         allocation = capital * weight
         profit = allocation * bt["avg_return"]
 
+        kelly_fraction = next(
+            (
+                k["kelly_fraction"]
+                for k in kelly_details
+                if k["symbol"] == trade["symbol"]
+            ),
+            0,
+        )
+
         positions.append(
             {
                 "symbol": trade["symbol"],
                 "allocated": round(allocation, 2),
                 "allocation_pct": round(weight * 100, 1),
+                "kelly_fraction": kelly_fraction,
                 "expected_return_pct": round(bt["avg_return"] * 100, 2),
                 "profit": round(profit, 2),
                 "action": trade["data"]["decision"]["action"],

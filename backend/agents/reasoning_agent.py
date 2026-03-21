@@ -13,3 +13,32 @@ def generate_reasoning(signals):
 
     reasons = [reasons_map[s["type"]] for s in signals if s["type"] in reasons_map]
     return " ".join(reasons)
+
+
+def generate_ml_explanation(decision, backtest):
+    if decision.get("ml_prediction") is None:
+        return None
+
+    prob = round(decision["ml_prediction"] * 100, 1)
+
+    ml = backtest.get("ml_model", {})
+    features = ml.get("top_features", [])
+
+    if not features:
+        return f"ML predicts {prob}% win probability."
+
+    mapping = {
+        "atr_pct": "rising volatility (ATR)",
+        "ma50_slope_norm": "trend strength (MA50 slope)",
+        "adx_norm": "momentum strength (ADX)",
+        "price_vs_ma50": "price relative to trend (MA50)",
+        "rsi_norm": "momentum (RSI)",
+        "macd_x_adx": "trend + momentum alignment",
+    }
+
+    readable = []
+    for f in features[:3]:
+        name = f[0]
+        readable.append(mapping.get(name, name))
+
+    return {"probability": prob, "drivers": readable}
