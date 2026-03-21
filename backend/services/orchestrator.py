@@ -149,10 +149,15 @@ def scan_market(symbols):
 
 
 def _format_output(top, opportunities, portfolio):
+    from datetime import datetime
+
     WIDTH = 74
     LABEL_W = 16
     SEP = ": "
     CONTENT_W = WIDTH - 4 - LABEL_W - len(SEP)
+    now = datetime.utcnow()
+    timestamp = now.strftime("%Y-%m-%d %H:%M UTC")
+    report_id = now.strftime("%Y%m%d-%H%M")
 
     lines = []
 
@@ -220,6 +225,117 @@ def _format_output(top, opportunities, portfolio):
     # HEADER
     border()
     lines.append(f"{'ALPHALENS AI  --  MARKET SCAN REPORT':^{WIDTH}}")
+    lines.append(f"{('Generated: ' + timestamp):^{WIDTH}}")
+    lines.append(f"{('Report ID: ' + report_id):^{WIDTH}}")
+    border()
+
+    section("SYSTEM IDENTITY")
+
+    text_block(
+        "AlphaLens AI is an AI-driven trading intelligence system combining "
+        "technical signal detection, machine learning probability modeling, "
+        "and risk-adjusted portfolio construction."
+    )
+
+    text_block(
+        "The system analyzes market data, evaluates historical strategy "
+        "performance, and surfaces probabilistic trading opportunities."
+    )
+
+    section("SYSTEM ARCHITECTURE")
+
+    text_block(
+        "Pipeline: Market Data → Signal Engine → ML Model → Risk Scoring → "
+        "Portfolio Allocation."
+    )
+
+    text_block(
+        "Components include a data ingestion agent, signal detection engine, "
+        "machine learning classifier, reliability scoring module, and a "
+        "portfolio simulation engine."
+    )
+
+    section("STRATEGY PHILOSOPHY")
+
+    text_block(
+        "The strategy follows a probability-driven approach where trading "
+        "decisions are based on statistical edge rather than deterministic "
+        "rules."
+    )
+
+    text_block(
+        "Signals are confirmed using historical success rates, machine "
+        "learning probabilities, and multi-factor technical alignment."
+    )
+
+    section("RISK MANAGEMENT")
+
+    text_block(
+        "Risk is controlled through Kelly-adjusted position sizing, "
+        "drawdown penalties, and Sharpe-weighted scoring."
+    )
+
+    text_block(
+        "Portfolio allocations are diversified across the highest scoring "
+        "opportunities to reduce concentration risk."
+    )
+
+    section("MODEL TRANSPARENCY")
+
+    text_block(
+        "The system emphasizes interpretability through feature importance, "
+        "machine learning probability outputs, and explicit reasoning for "
+        "each signal."
+    )
+
+    text_block(
+        "Backtest validation and feature attribution allow users to "
+        "understand the drivers behind each recommendation."
+    )
+
+    section("PERFORMANCE INTERPRETATION")
+
+    text_block(
+        "Sharpe ratio measures risk-adjusted returns. Higher values "
+        "indicate more consistent performance relative to volatility."
+    )
+
+    text_block(
+        "Max drawdown represents the largest peak-to-trough loss during "
+        "the strategy backtest."
+    )
+
+    text_block(
+        "Confidence reflects the system's combined signal strength, "
+        "historical success rate, and machine learning probability."
+    )
+
+    section("SYSTEM LIMITATIONS")
+
+    text_block(
+        "The system relies on historical market data and therefore cannot "
+        "guarantee future performance."
+    )
+
+    text_block(
+        "Market regime shifts, structural changes, or extreme events may "
+        "cause signals or models to behave differently than in past data."
+    )
+
+    text_block(
+        "Machine learning probabilities represent statistical likelihoods "
+        "and should not be interpreted as guarantees."
+    )
+
+    section("SYSTEM METADATA")
+
+    row("System", "AlphaLens AI")
+    row("Version", "v1.0")
+    row("Model", "ML-assisted signal scoring engine")
+    row("Frequency", "Daily / Weekly")
+    lines.append("")
+    border()
+    lines.append(f"{'TRADING ANALYSIS':^{WIDTH}}")
     border()
 
     # TOP PICK
@@ -300,6 +416,11 @@ def _format_output(top, opportunities, portfolio):
         for w in wrap(txt, WIDTH - 6):
             lines.append(f"|   {w:<{WIDTH-6}} |")
 
+    lines.append("")
+    border()
+    lines.append(f"{'PORTFOLIO ANALYSIS':^{WIDTH}}")
+    border()
+
     # PORTFOLIO
     section("PORTFOLIO POSITIONS")
 
@@ -365,6 +486,51 @@ def _format_output(top, opportunities, portfolio):
 
     text_block(
         "Weights are derived from Kelly fractions estimated from historical win rate and reward/risk ratio, then normalized across selected assets."
+    )
+
+    section("RESEARCH STATEMENT")
+
+    text_block(
+        "AlphaLens AI is designed as a quantitative research assistant "
+        "that surfaces probabilistic trading opportunities rather than "
+        "deterministic trading signals."
+    )
+
+    section("MODEL VALIDATION")
+
+    text_block(
+        "Machine learning predictions are evaluated using out-of-sample "
+        "testing and AUC-based classification performance metrics."
+    )
+
+    text_block(
+        "Model inputs include volatility, trend strength, and momentum "
+        "features derived from market data."
+    )
+
+    text_block(
+        "Backtest results shown in the report reflect historical strategy "
+        "performance and should be interpreted as research evidence rather "
+        "than guaranteed outcomes."
+    )
+
+    section("STATISTICAL SIGNIFICANCE")
+
+    text_block(
+        "Performance metrics are derived from historical backtests and "
+        "represent empirical observations rather than statistically "
+        "guaranteed results."
+    )
+
+    text_block(
+        "Trading outcomes may vary due to market regime changes, noise, "
+        "and stochastic price movements."
+    )
+
+    text_block(
+        "Users should interpret reported returns, Sharpe ratios, and "
+        "probabilities as research indicators rather than predictive "
+        "certainties."
     )
 
     # FOOTER
