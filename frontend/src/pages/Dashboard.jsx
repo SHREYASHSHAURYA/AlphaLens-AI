@@ -111,6 +111,17 @@ export default function Dashboard() {
         <p className="text-slate-400 text-sm mt-1">
           AI-driven trading opportunity discovery — NSE India
         </p>
+        {data?.scanned_at && (
+          <div className="flex items-center gap-2 mt-2">
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-xs text-green-400">
+              Live — Last scanned: {data.scanned_at}
+            </span>
+            <span className="text-xs text-slate-500">
+              · {data.symbols_scanned} symbols
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Metric Cards */}

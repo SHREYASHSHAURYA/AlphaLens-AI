@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime, timezone
 from backend.services.orchestrator import (
     run_pipeline,
     scan_market,
@@ -27,7 +28,7 @@ def analyze_stock(symbol: str):
 
 @app.get("/scan")
 def scan():
-    symbols = [
+    SYMBOLS = [
         "RELIANCE.NS",
         "TCS.NS",
         "INFY.NS",
@@ -44,12 +45,15 @@ def scan():
         "MARUTI.NS",
         "SUNPHARMA.NS",
     ]
-    return scan_market(symbols)
+    result = scan_market(SYMBOLS)
+    result["scanned_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    result["symbols_scanned"] = len(SYMBOLS)
+    return result
 
 
 @app.get("/report", response_class=PlainTextResponse)
 def report():
-    symbols = [
+    SYMBOLS = [
         "RELIANCE.NS",
         "TCS.NS",
         "INFY.NS",
@@ -67,7 +71,7 @@ def report():
         "SUNPHARMA.NS",
     ]
 
-    data = scan_market(symbols)
+    data = scan_market(SYMBOLS)
 
     formatted = _format_output(
         data["top_pick"],
