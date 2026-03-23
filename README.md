@@ -128,6 +128,13 @@ Detects 4 classical setups per stock:
 
 ---
 
+## Robust Data Handling
+
+AlphaLens AI is designed to handle occasional inconsistencies from external market data sources (such as temporary empty responses or formatting variations from Yahoo Finance).
+If data for a particular symbol cannot be processed during a scan cycle, the system automatically skips that symbol and continues analyzing the remaining assets. The symbol is retried in the next scan cycle, ensuring that the overall market analysis pipeline remains stable and uninterrupted.
+
+---
+
 ## Strategy Performance (Sample Results)
 
 ```
@@ -157,9 +164,7 @@ alphalens-ai/
 │   ├── services/
 │   │   └── orchestrator.py        # Full pipeline orchestration
 │   ├── utils/
-│   │   ├── helpers.py
-│   │   ├── indicators.py          # Technical indicator calculations
-│   │   └── similarity.py
+│   │   └──  indicators.py         # Technical indicator calculations
 │   └── main.py                    # FastAPI app + endpoints
 ├── frontend/
 │   ├── src/
@@ -239,12 +244,12 @@ _System architecture pipeline and methodology_
 ### Plain-Text Research Report
 
 ![Report](screenshots/report.png)
-_Full research report output from /report endpoint_
+_Research report output from /report endpoint_
 
 ### Market Scan API
 
 ![Scan](screenshots/scan.png)
-_Raw JSON output from /scan endpoint showing all 15 symbols with ML predictions and portfolio data_
+_Raw JSON output from /scan endpoint showing symbols with ML predictions and portfolio data_
 
 ---
 
