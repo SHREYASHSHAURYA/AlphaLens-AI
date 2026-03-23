@@ -2,7 +2,7 @@
 
 ### AI-Driven Market Intelligence & Trading Research Platform
 
-### Built for ET Markets Hackathon — "AI for the Indian Investor"
+### Built for ET Gen AI Hackathon — "AI for the Indian Investor"
 
 ---
 
@@ -204,6 +204,50 @@ alphalens-ai/
 
 ---
 
+## Screenshots
+
+### Dashboard
+
+![Dashboard](screenshots/dashboard.png)
+_Market Intelligence Dashboard — opportunity table, signal strength, and heatmap_
+
+### Opportunity Analysis
+
+![Opportunity](screenshots/opportunity.png)
+_AI Analyst Brief, ML Explainability, and Feature Importance for a selected stock_
+
+### Portfolio & Strategy
+
+![Portfolio](screenshots/portfolio.png)
+_Portfolio allocation pie chart and Strategy vs Benchmark equity curve_
+
+### Investment Simulator
+
+![Simulator](screenshots/simulator.png)
+_Investment simulation showing worst, expected, and best case outcomes_
+
+### Robustness & Research
+
+![Robustness](screenshots/robustness.png)
+_Multi-period performance and cross-asset Sharpe validation_
+
+### System Overview
+
+![System](screenshots/system.png)
+_System architecture pipeline and methodology_
+
+### Plain-Text Research Report
+
+![Report](screenshots/report.png)
+_Full research report output from /report endpoint_
+
+### Market Scan API
+
+![Scan](screenshots/scan.png)
+_Raw JSON output from /scan endpoint showing all 15 symbols with ML predictions and portfolio data_
+
+---
+
 ## Setup Instructions
 
 ### Prerequisites
@@ -265,6 +309,6 @@ Frontend runs on `http://localhost:5173`
 
 ## Disclaimer
 
-This project is built for research and educational purposes for the ET Markets Hackathon. Historical backtest results do not guarantee future performance. Trading involves significant financial risk. AlphaLens AI surfaces probabilistic opportunities backed by statistical evidence — not deterministic predictions.
+This project is built for research and educational purposes for an ET Gen AI Hackathon. Historical backtest results do not guarantee future performance. Trading involves significant financial risk. AlphaLens AI surfaces probabilistic opportunities backed by statistical evidence — not deterministic predictions.
 
 ---

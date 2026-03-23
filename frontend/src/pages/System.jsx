@@ -122,7 +122,7 @@ export default function System() {
             { label: "System", value: "AlphaLens AI" },
             { label: "Version", value: "v1.0" },
             { label: "Model", value: "ML Signal Scorer" },
-            { label: "Frequency", value: "Daily / Weekly" },
+            { label: "Frequency", value: "Daily(scan every 5 minutes)" },
           ].map((m) => (
             <div key={m.label} className="bg-[#0F172A] rounded-lg p-3">
               <p className="text-xs text-slate-400">{m.label}</p>
